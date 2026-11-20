@@ -10,6 +10,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +34,8 @@ fun BarcodeScannerScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var scannedOnce by remember { mutableStateOf(false) }
+    var captureRequested by remember { mutableStateOf(false) }
+    var statusMessage by remember { mutableStateOf("وجّه الكاميرا نحو الباركود أو اضغط تصوير") }
     val executor = remember { Executors.newSingleThreadExecutor() }
 
     DisposableEffect(Unit) {
@@ -71,6 +74,15 @@ fun BarcodeScannerScreen(
                                     if (!rawValue.isNullOrBlank() && !scannedOnce) {
                                         scannedOnce = true
                                         onBarcodeScanned(rawValue.trim())
+                                    } else if (captureRequested) {
+                                        captureRequested = false
+                                        statusMessage = "لم يظهر باركود واضح، قرّب الكاميرا وأعد المحاولة"
+                                    }
+                                }
+                                .addOnFailureListener {
+                                    if (captureRequested) {
+                                        captureRequested = false
+                                        statusMessage = "تعذرت القراءة، جرّب إضاءة أفضل"
                                     }
                                 }
                                 .addOnCompleteListener {
@@ -94,18 +106,34 @@ fun BarcodeScannerScreen(
             }
         )
 
-        Surface(
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-            shape = MaterialTheme.shapes.medium,
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(24.dp)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "وجّه الكاميرا نحو الباركود لمعرفة السعر والكمية",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                style = MaterialTheme.typography.titleMedium
-            )
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text(
+                    text = statusMessage,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            Button(
+                onClick = {
+                    captureRequested = true
+                    statusMessage = "جاري قراءة الباركود..."
+                }
+            ) {
+                Icon(Icons.Default.CameraAlt, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("تصوير ومسح")
+            }
         }
 
         IconButton(
