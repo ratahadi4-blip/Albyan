@@ -42,11 +42,13 @@ fun InventoryApp(
 
     var scannedProduct by remember { mutableStateOf<Product?>(null) }
     var notFoundBarcode by remember { mutableStateOf<String?>(null) }
+    var lastScannedInfo by remember { mutableStateOf<String?>(null) }
 
     suspend fun lookupBarcode(code: String) {
         val cleanCode = code.trim()
         if (cleanCode.isEmpty()) return
         barcodeInput = cleanCode
+        lastScannedInfo = "تم قراءة الباركود: $cleanCode"
         val found = dao.getByBarcode(cleanCode)
         if (found != null) {
             scannedProduct = found
@@ -89,7 +91,12 @@ fun InventoryApp(
                 Button(
                     onClick = {
                         onRequestCameraScan { code ->
-                            scope.launch { lookupBarcode(code) }
+                            val clean = code.trim()
+                            if (clean.isNotEmpty()) {
+                                barcodeInput = clean
+                                lastScannedInfo = "تم قراءة الباركود: $clean"
+                                scope.launch { lookupBarcode(clean) }
+                            }
                         }
                     }
                 ) {
@@ -97,6 +104,15 @@ fun InventoryApp(
                     Spacer(Modifier.width(6.dp))
                     Text("مسح")
                 }
+            }
+
+            lastScannedInfo?.let { info ->
+                Text(
+                    text = info,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             Row(
