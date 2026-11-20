@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat
 import com.albayan.pos.data.AppDatabase
 import com.albayan.pos.ui.BarcodeScannerScreen
 import com.albayan.pos.ui.InventoryApp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,6 +25,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 val context = LocalContext.current
+                val mainScope = rememberCoroutineScope()
                 var isScanning by remember { mutableStateOf(false) }
                 var scanCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
 
@@ -51,8 +54,10 @@ class MainActivity : ComponentActivity() {
                 if (isScanning) {
                     BarcodeScannerScreen(
                         onBarcodeScanned = { code ->
-                            isScanning = false
-                            scanCallback?.invoke(code)
+                            mainScope.launch(Dispatchers.Main) {
+                                isScanning = false
+                                scanCallback?.invoke(code)
+                            }
                         },
                         onClose = { isScanning = false }
                     )
